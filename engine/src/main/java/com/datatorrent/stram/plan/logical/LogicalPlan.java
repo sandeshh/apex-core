@@ -1205,8 +1205,12 @@ public class LogicalPlan implements Serializable, DAG
   }
 
   @Override
-  public <T extends Operator> T addOperator(String name, Class<T> clazz)
+  public <T extends Operator> T addOperator(@NotNull String name, Class<T> clazz)
   {
+    if (name.isEmpty()) {
+      throw new IllegalArgumentException("Empty operator name is not allowed");
+    }
+
     T instance;
     try {
       instance = clazz.newInstance();
@@ -1218,8 +1222,12 @@ public class LogicalPlan implements Serializable, DAG
   }
 
   @Override
-  public <T extends Operator> T addOperator(String name, T operator)
+  public <T extends Operator> T addOperator(@NotNull String name, T operator)
   {
+    if (name.isEmpty()) {
+      throw new IllegalArgumentException("Empty operator name is not allowed");
+    }
+
     if (operators.containsKey(name)) {
       if (operators.get(name).operator == operator) {
         return operator;
@@ -1319,8 +1327,12 @@ public class LogicalPlan implements Serializable, DAG
   }
 
   @Override
-  public <T extends Module> T addModule(String name, T module)
+  public <T extends Module> T addModule(@NotNull String name, T module)
   {
+    if (name.isEmpty()) {
+      throw new IllegalArgumentException("Empty module name is not allowed");
+    }
+
     if (modules.containsKey(name)) {
       if (modules.get(name).module == module) {
         return module;
@@ -1337,8 +1349,12 @@ public class LogicalPlan implements Serializable, DAG
   }
 
   @Override
-  public <T extends Module> T addModule(String name, Class<T> clazz)
+  public <T extends Module> T addModule(@NotNull String name, Class<T> clazz)
   {
+    if (name.isEmpty()) {
+      throw new IllegalArgumentException("Empty module name is not allowed");
+    }
+
     T instance;
     try {
       instance = clazz.newInstance();
@@ -1371,8 +1387,12 @@ public class LogicalPlan implements Serializable, DAG
   }
 
   @Override
-  public StreamMeta addStream(String id)
+  public StreamMeta addStream(@NotNull String id)
   {
+    if (id.isEmpty()) {
+      throw new IllegalArgumentException("Empty stream name is not allowed");
+    }
+
     StreamMeta s = new StreamMeta(id);
     StreamMeta o = streams.put(id, s);
     if (o == null) {
@@ -1384,8 +1404,12 @@ public class LogicalPlan implements Serializable, DAG
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> StreamMeta addStream(String id, Operator.OutputPort<? extends T> source, Operator.InputPort<? super T>... sinks)
+  public <T> StreamMeta addStream(@NotNull String id, Operator.OutputPort<? extends T> source, Operator.InputPort<? super T>... sinks)
   {
+    if (id.isEmpty()) {
+      throw new IllegalArgumentException("Empty stream name is not allowed");
+    }
+
     StreamMeta s = addStream(id);
     s.setSource(source);
     for (Operator.InputPort<?> sink : sinks) {
