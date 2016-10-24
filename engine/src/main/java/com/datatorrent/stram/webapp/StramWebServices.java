@@ -66,6 +66,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.commons.beanutils.BeanMap;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
@@ -357,11 +358,17 @@ public class StramWebServices
   @POST // not supported by WebAppProxyServlet, can only be called directly
   @Path(PATH_SHUTDOWN)
   @Produces(MediaType.APPLICATION_JSON)
-  public JSONObject shutdown()
+  public JSONObject shutdown(@QueryParam("failed") String failed)
   {
     init();
     LOG.debug("Shutdown requested");
-    dagManager.shutdownAllContainers("Shutdown requested externally.");
+
+    if ("1".equals(failed) || BooleanUtils.toBoolean(failed)) {
+      dagManager.shutdownAllContainers("Shutdown requested externally with final status as failed.", true);
+    } else {
+      dagManager.shutdownAllContainers("Shutdown requested externally with final status as success.", false);
+    }
+
     return new JSONObject();
   }
 

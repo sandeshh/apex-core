@@ -98,6 +98,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+
 import com.datatorrent.api.Attribute;
 import com.datatorrent.api.AutoMetric;
 import com.datatorrent.api.Component;
@@ -209,7 +210,7 @@ public class StreamingContainerManager implements PlanContext
   private FSEventRecorder eventRecorder;
   protected final Map<String, String> containerStopRequests = new ConcurrentHashMap<>();
   protected final ConcurrentLinkedQueue<ContainerStartRequest> containerStartRequests = new ConcurrentLinkedQueue<>();
-  protected boolean forcedShutdown = false;
+  protected AtomicBoolean forcedShutdown = new AtomicBoolean(false);
   private final ConcurrentLinkedQueue<Runnable> eventQueue = new ConcurrentLinkedQueue<>();
   private final AtomicBoolean eventQueueProcessing = new AtomicBoolean();
   private final HashSet<PTContainer> pendingAllocation = Sets.newLinkedHashSet();
@@ -761,8 +762,7 @@ public class StreamingContainerManager implements PlanContext
         for (PTContainer c : pendingAllocation) {
           LOG.warn("Waiting for resource: {}m priority: {} {}", c.getRequiredMemoryMB(), c.getResourceRequestPriority(), c);
         }
-        shutdownAllContainers(msg);
-        this.forcedShutdown = true;
+        shutdownAllContainers(msg, true);
       } else {
         for (PTContainer c : pendingAllocation) {
           LOG.debug("Waiting for resource: {}m {}", c.getRequiredMemoryMB(), c);
@@ -1421,8 +1421,7 @@ public class StreamingContainerManager implements PlanContext
       } else {
         String msg = String.format("Shutdown after reaching failure threshold for %s", oper);
         LOG.warn(msg);
-        shutdownAllContainers(msg);
-        forcedShutdown = true;
+        shutdownAllContainers(msg, true);
       }
     } else {
       // should not get here
@@ -2183,10 +2182,12 @@ public class StreamingContainerManager implements PlanContext
    *
    * @param message
    */
-  public void shutdownAllContainers(String message)
+  public void shutdownAllContainers(String message, boolean failed)
   {
     this.shutdownDiagnosticsMessage = message;
-    LOG.info("Initiating application shutdown: {}", message);
+    this.forcedShutdown.set(failed);
+
+    LOG.info("Initiating application shutdown: {} forced shutdown as {}", message, failed);
     for (StreamingContainerAgent cs : this.containers.values()) {
       cs.shutdownRequested = true;
     }
