@@ -222,7 +222,7 @@ public class LaunchContainerRunnable implements Runnable
     } else {
       Map<String, String> params = new HashMap<>();
       params.put("applicationId", Integer.toString(container.getId().getApplicationAttemptId().getApplicationId().getId()));
-      params.put("containerId", Integer.toString(container.getId().getId()));
+      params.put("containerId", Long.toString(container.getId().getContainerId()));
       StrSubstitutor sub = new StrSubstitutor(params, "%(", ")");
       vargs.add(sub.replace(jvmOpts));
       if (dag.isDebug() && !jvmOpts.contains("-agentlib:jdwp=")) {

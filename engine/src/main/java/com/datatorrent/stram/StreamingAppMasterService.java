@@ -72,6 +72,7 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
 import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.exceptions.ApplicationMasterNotRegisteredException;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 import org.apache.hadoop.yarn.util.Clock;
@@ -156,6 +157,8 @@ public class StreamingAppMasterService extends CompositeService
   private final ClusterAppStats stats = new ClusterAppStats();
   private StramDelegationTokenManager delegationTokenManager = null;
   private AppDataPushAgent appDataPushAgent;
+  private int maxMem;
+  private int maxVcores;
 
   public StreamingAppMasterService(ApplicationAttemptId appAttemptID)
   {
@@ -656,6 +659,18 @@ public class StreamingAppMasterService extends CompositeService
     return status;
   }
 
+  private void registerWithRM() throws YarnException, IOException
+  {
+    // Register self with ResourceManager
+    RegisterApplicationMasterResponse response = amRmClient.registerApplicationMaster(appMasterHostname, 0, appMasterTrackingUrl);
+
+    // Dump out information about cluster capability as seen by the resource manager
+    maxMem = response.getMaximumResourceCapability().getMemory();
+    maxVcores = response.getMaximumResourceCapability().getVirtualCores();
+
+    LOG.info("Max mem {}m, Max vcores {}m capabililty of resources in this cluster ", maxMem, maxVcores);
+  }
+
   /**
    * Main run function for the application master
    *
@@ -679,15 +694,11 @@ public class StreamingAppMasterService extends CompositeService
     String principal = dag.getValue(LogicalPlan.PRINCIPAL);
     String hdfsKeyTabFile = dag.getValue(LogicalPlan.KEY_TAB_FILE);
 
-    // Register self with ResourceManager
-    RegisterApplicationMasterResponse response = amRmClient.registerApplicationMaster(appMasterHostname, 0, appMasterTrackingUrl);
-
-    // Dump out information about cluster capability as seen by the resource manager
-    int maxMem = response.getMaximumResourceCapability().getMemory();
-    int maxVcores = response.getMaximumResourceCapability().getVirtualCores();
+    registerWithRM();
     int minMem = conf.getInt("yarn.scheduler.minimum-allocation-mb", 0);
     int minVcores = conf.getInt("yarn.scheduler.minimum-allocation-vcores", 0);
-    LOG.info("Max mem {}m, Min mem {}m, Max vcores {} and Min vcores {} capabililty of resources in this cluster ", maxMem, minMem, maxVcores, minVcores);
+
+    LOG.info("Min mem {}m, Min vcores {}m capabililty of resources in this cluster ", minMem, minVcores);
 
     long blacklistRemovalTime = dag.getValue(DAGContext.BLACKLISTED_NODE_REMOVAL_TIME_MILLIS);
     int maxConsecutiveContainerFailures = dag.getValue(DAGContext.MAX_CONSECUTIVE_CONTAINER_FAILURES_FOR_BLACKLIST);
@@ -847,17 +858,18 @@ public class StreamingAppMasterService extends CompositeService
       numTotalContainers += containerRequests.size();
       numRequestedContainers += containerRequests.size();
       AllocateResponse amResp = sendContainerAskToRM(containerRequests, removedContainerRequests, releasedContainers);
-      if (amResp.getAMCommand() != null) {
-        LOG.info(" statement executed:{}", amResp.getAMCommand());
-        switch (amResp.getAMCommand()) {
-          case AM_RESYNC:
-          case AM_SHUTDOWN:
-            throw new YarnRuntimeException("Received the " + amResp.getAMCommand() + " command from RM");
-          default:
-            throw new YarnRuntimeException("Received the " + amResp.getAMCommand() + " command from RM");
 
+      try {
+        amResp.getAMCommand();
+      } catch (Exception yarnException) {
+        if (yarnException instanceof ApplicationMasterNotRegisteredException) {
+          registerWithRM();
+        } else {
+         dnmgr.forcedShutdown = true;
+         dnmgr.shutdownAllContainers(yarnException.toString());
         }
       }
+
       releasedContainers.clear();
 
       // Retrieve list of allocated containers from the response
@@ -1114,7 +1126,7 @@ public class StreamingAppMasterService extends CompositeService
     }
 
     for (ContainerId containerId : releasedContainers) {
-      LOG.info("Released container, id={}", containerId.getId());
+      LOG.info("Released container, id={}", containerId.getContainerId());
       amRmClient.releaseAssignedContainer(containerId);
     }
 
