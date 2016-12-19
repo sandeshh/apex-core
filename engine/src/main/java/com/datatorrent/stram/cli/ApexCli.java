@@ -101,6 +101,7 @@ import com.datatorrent.stram.client.AppPackage.AppInfo;
 import com.datatorrent.stram.client.ConfigPackage;
 import com.datatorrent.stram.client.DTConfiguration;
 import com.datatorrent.stram.client.DTConfiguration.Scope;
+import com.datatorrent.stram.client.DTConfiguration.ValueEntry;
 import com.datatorrent.stram.client.RecordingsAgent;
 import com.datatorrent.stram.client.RecordingsAgent.RecordingInfo;
 import com.datatorrent.stram.client.StramAgent;
@@ -3474,13 +3475,25 @@ public class ApexCli
     public void execute(String[] args, ConsoleReader reader) throws Exception
     {
       try (AppPackage ap = newAppPackageInstance(new File(expandFileName(args[1], true)))) {
+        //Ignore all attribute descriptions since attributes are platform dependent and not app-package dependent.
+        for (Map.Entry<String, ValueEntry> entry : ap.getDefaultProperties().entrySet()) {
+          if (entry.getKey().contains(".attr.")) {
+            entry.getValue().description = null;
+          }
+        }
+        for (AppInfo appInfo : ap.getApplications()) {
+          for (Map.Entry<String, ValueEntry> entry : appInfo.defaultProperties.entrySet()) {
+            if (entry.getKey().contains(".attr.")) {
+              entry.getValue().description = null;
+            }
+          }
+        }
         JSONSerializationProvider jomp = new JSONSerializationProvider();
         JSONObject apInfo = new JSONObject(jomp.getContext(null).writeValueAsString(ap));
         apInfo.remove("name");
         printJson(apInfo);
       }
     }
-
   }
 
   private void checkConfigPackageCompatible(AppPackage ap, ConfigPackage cp)
@@ -3728,11 +3741,11 @@ public class ApexCli
         break;
       }
     }
-    Map<String, String> defaultProperties = selectedApp == null ? ap.getDefaultProperties() : selectedApp.defaultProperties;
+    Map<String, ValueEntry> defaultProperties = selectedApp == null ? ap.getDefaultProperties() : selectedApp.defaultProperties;
     Set<String> requiredProperties = new TreeSet<>(selectedApp == null ? ap.getRequiredProperties() : selectedApp.requiredProperties);
 
-    for (Map.Entry<String, String> entry : defaultProperties.entrySet()) {
-      launchProperties.set(entry.getKey(), entry.getValue(), Scope.TRANSIENT, null);
+    for (Map.Entry<String, ValueEntry> entry : defaultProperties.entrySet()) {
+      launchProperties.set(entry.getKey(), entry.getValue().value, Scope.TRANSIENT, entry.getValue().description);
       requiredProperties.remove(entry.getKey());
     }
 

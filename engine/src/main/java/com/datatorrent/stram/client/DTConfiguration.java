@@ -38,6 +38,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -73,7 +74,9 @@ public class DTConfiguration implements Iterable<Map.Entry<String, String>>
   public static class ValueEntry
   {
     public String value;
+    @JsonIgnore
     public boolean isFinal = false;
+    @JsonIgnore
     public Scope scope = Scope.TRANSIENT;
     public String description;
   }
@@ -97,6 +100,11 @@ public class DTConfiguration implements Iterable<Map.Entry<String, String>>
       result.put(entry.getKey(), entry.getValue().value);
     }
     return result.entrySet().iterator();
+  }
+
+  public Map<String, ValueEntry> getMap()
+  {
+    return map;
   }
 
   public void writeToFile(File file, Scope scope, String comment) throws IOException
