@@ -102,6 +102,11 @@ public class DataList
   public void rewind(final int baseSeconds, final int windowId) throws IOException
   {
     final long longWindowId = (long)baseSeconds << 32 | windowId;
+    rewind(longWindowId);
+  }
+
+  public void rewind(final long longWindowId) throws IOException
+  {
     logger.debug("Rewinding {} from window ID {} to window ID {}", this, Codec.getStringWindowId(last.ending_window),
         Codec.getStringWindowId(longWindowId));
 

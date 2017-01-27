@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -36,6 +37,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.jctools.queues.SpscArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,6 +186,8 @@ public class Server implements ServerListener
   private final ConcurrentHashMap<String, DataList> publisherBuffers = new ConcurrentHashMap<>(1, 0.75f, 1);
   private final ConcurrentHashMap<String, LogicalNode> subscriberGroups = new ConcurrentHashMap<String, LogicalNode>();
   private final ConcurrentHashMap<String, AbstractLengthPrependerClient> publisherChannels = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Thread> publisherThreads = new ConcurrentHashMap<>(1, 0.75f, 1);
+
   private final int blockSize;
   private final int numberOfCacheBlocks;
 
@@ -397,6 +401,123 @@ public class Server implements ServerListener
     dl.setSecondaryStorage(storage, storageHelperExecutor);
 
     return dl;
+  }
+
+
+  class QueuePublisher implements Runnable
+  {
+    DataList dl;
+    Queue<byte[]> queue;
+    byte[] buffer;
+    int offset = 0;
+    boolean flushPending = false;
+
+    public QueuePublisher(DataList dl, Queue<byte[]> queue, long windowId)
+    {
+      this.dl = dl;
+      this.queue = queue;
+      this.buffer = dl.getBuffer(windowId);
+    }
+
+    @Override
+    public void run()
+    {
+      byte[] scratch = new byte[5];
+
+      while (true) {
+        byte[] tuple = queue.poll();
+
+        if (tuple == null) {
+          try {
+            if (flushPending) {
+              dl.flush(offset);
+              flushPending = false;
+            }
+            Thread.sleep(5);
+          } catch (InterruptedException e) {
+            return;
+          }
+        } else {
+          flushPending = true;
+          int len = VarInt.write(tuple.length, scratch, 0);
+
+          if (buffer.length - offset >= len + tuple.length) {
+            offset = VarInt.write(tuple.length, buffer, offset);
+            System.arraycopy(tuple, 0, buffer, offset, tuple.length);
+            offset += tuple.length;
+            continue;
+          }
+
+          if (buffer.length - offset >= len) {
+            offset = VarInt.write(tuple.length, buffer, offset);
+          }
+
+          dl.flush(buffer.length);
+
+          int count = 0;
+          while (!dl.isMemoryBlockAvailable()) {
+            try {
+              Thread.sleep(10);
+
+              if (count++ == 100) {
+                count = 0;
+                logger.warn("Memory block not available, spooling needs to be done");
+              }
+            } catch (InterruptedException e) {
+              return;
+            }
+          }
+
+          buffer = dl.newBuffer(buffer.length);
+          dl.addBuffer(buffer);
+
+          offset = VarInt.write(tuple.length, buffer, 0);
+          System.arraycopy(tuple, 0, buffer, offset, tuple.length);
+          offset += tuple.length;
+        }
+      }
+    }
+  }
+
+  /**
+   *
+   * @param request
+   * @param connection
+   * @return
+   */
+  public Queue<byte[]> handleQueuePublisherRequest(String identifier, long windowId, int queueCapacity)
+  {
+    DataList dl = publisherBuffers.get(identifier);
+    Queue<byte[]> queue = new SpscArrayQueue<>(queueCapacity);
+
+    if (dl != null) {
+      try {
+        Thread thread = publisherThreads.get(identifier);
+
+        if (thread != null) {
+          thread.interrupt();
+        }
+
+        dl.rewind(windowId);
+
+      } catch (IOException ie) {
+        throw new RuntimeException(ie);
+      }
+    } else {
+      dl = new DataList(identifier, blockSize, numberOfCacheBlocks);
+      DataList odl = publisherBuffers.putIfAbsent(identifier, dl);
+      if (odl != null) {
+        dl = odl;
+      }
+    }
+
+    dl.setSecondaryStorage(storage, storageHelperExecutor);
+    dl.setAutoFlushExecutor(serverHelperExecutor);
+
+    publisherThreads.put(identifier, new Thread(new QueuePublisher(dl, queue, windowId), "Publisher " + identifier));
+    publisherThreads.get(identifier).start();
+
+    return queue;
   }
 
   @Override
