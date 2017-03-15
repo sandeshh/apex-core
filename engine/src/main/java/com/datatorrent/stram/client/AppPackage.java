@@ -42,7 +42,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
-import com.datatorrent.stram.client.DTConfiguration.ValueEntry;
 import com.datatorrent.stram.client.StramAppLauncher.AppFactory;
 import com.datatorrent.stram.plan.logical.LogicalPlan;
 
@@ -82,7 +81,7 @@ public class AppPackage extends JarFile
   private final List<String> appPropertiesFiles = new ArrayList<>();
 
   private final Set<String> requiredProperties = new TreeSet<>();
-  private final Map<String, ValueEntry> defaultProperties = new TreeMap<>();
+  private final Map<String, PropertyInfo> defaultProperties = new TreeMap<>();
   private final Set<String> configs = new TreeSet<>();
 
   private final File resourcesDirectory;
@@ -99,7 +98,7 @@ public class AppPackage extends JarFile
     public String errorStackTrace;
 
     public Set<String> requiredProperties = new TreeSet<>();
-    public Map<String, ValueEntry> defaultProperties = new TreeMap<>();
+    public Map<String, PropertyInfo> defaultProperties = new TreeMap<>();
 
     public AppInfo(String name, String file, String type)
     {
@@ -108,6 +107,16 @@ public class AppPackage extends JarFile
       this.type = type;
     }
 
+  }
+
+  public static class PropertyInfo {
+    public String value;
+    public String description;
+
+    public PropertyInfo(String value, String description) {
+      this.value = value;
+      this.description = description;
+    }
   }
 
   public AppPackage(File file) throws IOException, ZipException
@@ -318,7 +327,7 @@ public class AppPackage extends JarFile
     return Collections.unmodifiableSet(requiredProperties);
   }
 
-  public Map<String, ValueEntry> getDefaultProperties()
+  public Map<String, PropertyInfo> getDefaultProperties()
   {
     return Collections.unmodifiableMap(defaultProperties);
   }
@@ -427,21 +436,23 @@ public class AppPackage extends JarFile
     DTConfiguration config = new DTConfiguration();
     try {
       config.loadFile(file);
-      for (Map.Entry<String, ValueEntry> entry : config.getMap().entrySet()) {
+      for (Map.Entry<String, String> entry : config) {
         String key = entry.getKey();
-        ValueEntry valueEntry = entry.getValue();
-        if (valueEntry.value == null) {
+        String value = entry.getValue();
+        if (value == null) {
           if (app == null) {
             requiredProperties.add(key);
           } else {
             app.requiredProperties.add(key);
           }
         } else {
+          PropertyInfo propertyInfo = new PropertyInfo(value, key.contains(".attr.") ? null : config.getDescription(key));
+
           if (app == null) {
-            defaultProperties.put(key, valueEntry);
+            defaultProperties.put(key,propertyInfo);
           } else {
             app.requiredProperties.remove(key);
-            app.defaultProperties.put(key, valueEntry);
+            app.defaultProperties.put(key, propertyInfo);
           }
         }
       }

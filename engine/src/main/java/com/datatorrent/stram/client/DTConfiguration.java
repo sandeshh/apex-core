@@ -71,7 +71,7 @@ public class DTConfiguration implements Iterable<Map.Entry<String, String>>
   private final Map<String, ValueEntry> map = new LinkedHashMap<>();
   private static final Logger LOG = LoggerFactory.getLogger(DTConfiguration.class);
 
-  public static class ValueEntry
+  private static class ValueEntry
   {
     public String value;
     @JsonIgnore
@@ -100,11 +100,6 @@ public class DTConfiguration implements Iterable<Map.Entry<String, String>>
       result.put(entry.getKey(), entry.getValue().value);
     }
     return result.entrySet().iterator();
-  }
-
-  public Map<String, ValueEntry> getMap()
-  {
-    return map;
   }
 
   public void writeToFile(File file, Scope scope, String comment) throws IOException

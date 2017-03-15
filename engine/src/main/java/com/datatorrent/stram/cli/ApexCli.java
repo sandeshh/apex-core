@@ -101,7 +101,6 @@ import com.datatorrent.stram.client.AppPackage.AppInfo;
 import com.datatorrent.stram.client.ConfigPackage;
 import com.datatorrent.stram.client.DTConfiguration;
 import com.datatorrent.stram.client.DTConfiguration.Scope;
-import com.datatorrent.stram.client.DTConfiguration.ValueEntry;
 import com.datatorrent.stram.client.RecordingsAgent;
 import com.datatorrent.stram.client.RecordingsAgent.RecordingInfo;
 import com.datatorrent.stram.client.StramAgent;
@@ -3476,13 +3475,13 @@ public class ApexCli
     {
       try (AppPackage ap = newAppPackageInstance(new File(expandFileName(args[1], true)))) {
         //Ignore all attribute descriptions since attributes are platform dependent and not app-package dependent.
-        for (Map.Entry<String, ValueEntry> entry : ap.getDefaultProperties().entrySet()) {
+        for (Map.Entry<String, AppPackage.PropertyInfo> entry : ap.getDefaultProperties().entrySet()) {
           if (entry.getKey().contains(".attr.")) {
             entry.getValue().description = null;
           }
         }
         for (AppInfo appInfo : ap.getApplications()) {
-          for (Map.Entry<String, ValueEntry> entry : appInfo.defaultProperties.entrySet()) {
+          for (Map.Entry<String, AppPackage.PropertyInfo> entry : appInfo.defaultProperties.entrySet()) {
             if (entry.getKey().contains(".attr.")) {
               entry.getValue().description = null;
             }
@@ -3741,10 +3740,10 @@ public class ApexCli
         break;
       }
     }
-    Map<String, ValueEntry> defaultProperties = selectedApp == null ? ap.getDefaultProperties() : selectedApp.defaultProperties;
+    Map<String, AppPackage.PropertyInfo> defaultProperties = selectedApp == null ? ap.getDefaultProperties() : selectedApp.defaultProperties;
     Set<String> requiredProperties = new TreeSet<>(selectedApp == null ? ap.getRequiredProperties() : selectedApp.requiredProperties);
 
-    for (Map.Entry<String, ValueEntry> entry : defaultProperties.entrySet()) {
+    for (Map.Entry<String, AppPackage.PropertyInfo> entry : defaultProperties.entrySet()) {
       launchProperties.set(entry.getKey(), entry.getValue().value, Scope.TRANSIENT, entry.getValue().description);
       requiredProperties.remove(entry.getKey());
     }
