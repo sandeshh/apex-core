@@ -76,6 +76,33 @@ public class TupleRecorder
   private String recordingNameTopic;
   private long numWindows = Long.MAX_VALUE; // number of windows to record
   private Runnable stopProcedure; // stop procedure to execute
+
+  private static final Logger logger = LoggerFactory.getLogger(TupleRecorder.class);
+
+  // If there are errors processing tuples, don't log an error for every tuple as it could overwhelm the logs.
+  // The property specifies the minumum number of tuples between two consecutive error log statements. Set it to zero to
+  // log every tuple error
+  private static int ERROR_LOG_GAP;
+  int lastLog = -1;
+
+  static {
+    ERROR_LOG_GAP = 10000;
+    String property = System.getProperty("apex.tupleRecorder.errorLogGap");
+    if (property != null) {
+      try {
+        int value = Integer.parseInt(property);
+        if (value < 0 ) {
+          logger.warn("Log gap should be greater than or equal to 0, setting to default");
+        } else {
+          ERROR_LOG_GAP = value;
+        }
+      } catch (Exception ex) {
+        logger.warn("Unable to parse the log gap property, setting to default", ex);
+      }
+    }
+    logger.debug("Log gap is {}", ERROR_LOG_GAP);
+  }
+
   private final FSPartFileCollection storage = new FSPartFileCollection()
   {
     @Override
@@ -410,13 +437,15 @@ public class TupleRecorder
       storage.writeDataItem(bos.toByteArray(), true);
       //logger.debug("Writing tuple for port id {}", pi.id);
       //fsOutput.hflush();
-      ++totalTupleCount;
       if (numSubscribers > 0) {
         // this is not asynchronous.  we need to fix this
         publishTupleData(pi.id, obj);
       }
-    } catch (IOException ex) {
-      logger.error(ex.toString());
+      ++totalTupleCount;
+    } catch (Exception ex) {
+      if (shouldLog()) {
+        logger.warn("Error writing tuple {}", obj, ex);
+      }
     }
   }
 
@@ -463,8 +492,19 @@ public class TupleRecorder
         wsClient.publish(recordingNameTopic, map);
       }
     } catch (Exception ex) {
-      logger.warn("Error publishing tuple data", ex);
+      if (shouldLog()) {
+        logger.warn("Error publishing tuple data {}", obj, ex);
+      }
     }
+  }
+
+  private boolean shouldLog()
+  {
+    if ((lastLog == -1) || (totalTupleCount - lastLog) >= ERROR_LOG_GAP) {
+      lastLog = totalTupleCount;
+      return true;
+    }
+    return false;
   }
 
   public void setNumWindows(long numWindows, Runnable stopProcedure)
@@ -519,5 +559,4 @@ public class TupleRecorder
 
   }
 
-  private static final Logger logger = LoggerFactory.getLogger(TupleRecorder.class);
 }
