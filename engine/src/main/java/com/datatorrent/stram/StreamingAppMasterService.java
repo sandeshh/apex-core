@@ -872,8 +872,13 @@ public class StreamingAppMasterService extends CompositeService
         Long pendingSince = pendingContainersToKill.get(containerId);
         if (pendingSince == null) {
           pendingContainersToKill.put(containerId, System.currentTimeMillis());
-        } else if (System.currentTimeMillis() - pendingSince > 30 * 1000){
-          recoverContainer(containerId);
+        }
+      }
+
+      for (Map.Entry<String, Long> pendingToKill : pendingContainersToKill.entrySet()) {
+        if (System.currentTimeMillis() - pendingToKill.getValue() > 30 * 1000) {
+          LOG.info("Timeout happened for NodeManager kill container request, recovering the container {} without waiting", pendingToKill.getKey());
+          recoverContainer(pendingToKill.getKey());
         }
       }
 
