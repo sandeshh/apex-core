@@ -198,7 +198,10 @@ public class DataList
             first = temp;
             first.prev = null;
           }
-          first.purge(windowId);
+          // Not purging partial data within the window as there seems to be a scenario in which it is incorrect purging
+          // excess data than what is required and potentially causing catastrophic errors for downstream operators.
+          // The unpurged partial data will be cleaned up in a future purge cycle
+          //first.purge(windowId);
           break;
         }
         temp.discard(false);
