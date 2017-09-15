@@ -60,6 +60,13 @@ public class Pair<F, S> implements Serializable
     return true;
   }
 
+  private Pair()
+  {
+    //For Kryo deserialization
+    first = null;
+    second = null;
+  }
+
   public Pair(F first, S second)
   {
     this.first = first;
