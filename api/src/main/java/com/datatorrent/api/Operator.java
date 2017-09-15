@@ -71,6 +71,24 @@ public interface Operator extends Component<OperatorContext>, GenericOperator
 
   }
 
+  enum RecoveryMode
+  {
+    /**
+     * Recover the operator from checkpoint
+     */
+    CHECKPOINT,
+    /**
+     * Reuse the same instance of the operator from before the failure event.
+     *
+     * This only applies to scenarios where the failure is in an upstream operator and the not the operator itself.
+     * Reusing the same instance may not be applicable to all operators and it can lead to incorrect results because the
+     * operator state will not be consistent with the processing position in the stream. This should be used only for
+     * operators that are either invariant to reusing the same state with the stream processing position modified
+     * according to the processing mode or tolerant to it.
+     */
+    REUSE_INSTANCE
+  }
+
   /**
    * This method gets called at the beginning of each window.
    *
@@ -238,6 +256,29 @@ public interface Operator extends Component<OperatorContext>, GenericOperator
      */
     void deactivate();
 
+  }
+
+  /**
+   * Interface an operator must implement if it wants to be informed by the engine about reuse of the same instance of
+   * the operator during a failure event.
+   *
+   * If an operator's recovery mode is set to {@link RecoveryMode#REUSE_INSTANCE} and an upstream operator fails, the
+   * same instance of the operator from before the failure event will be reused. This interface allows the operator to
+   * be notified when such an event occurs. The usual initialization lifecycle methods such as {@link Operator#setup(Context)},
+   * {@link Operator.ActivationListener#activate(Context)}, {@link ActivationListener#deactivate()} and {@link Operator#teardown()}
+   * are not called as they may result in full reinitializations depending on how the operator was written and not a
+   * true reuse of the operator instance. The operator can however optionally choose to do any reinitializations it
+   * wants in this scenario by implementing this interface.
+   *
+   * @param <CONTEXT> Context for the current run during which the operator is getting recovered.
+   */
+  interface ReactivationListener<CONTEXT extends Context> extends ActivationListener<CONTEXT>
+  {
+    /**
+     * Notify the operator that it is being reactivated.
+     * @param context - the context in which the operator is executing.
+     */
+    void reactivate(CONTEXT context);
   }
 
   /**
