@@ -258,6 +258,7 @@ public class StreamingContainerManager implements PlanContext
   private final Map<String, Queue<Pair<Long, Map<String, Object>>>> logicalMetrics = Maps.newConcurrentMap();
   //logical operator name to latest logical metrics.
   private final Map<String, Map<String, Object>> latestLogicalMetrics = Maps.newHashMap();
+  private final Map<String, Pair<Long, Map<String, Object>>> latestLogicalCompletedMetrics = Maps.newHashMap();
 
   //logical operator name to latest counters. exists for backward compatibility.
   private final Map<String, Object> latestLogicalCounters = Maps.newHashMap();
@@ -959,7 +960,11 @@ public class StreamingContainerManager implements PlanContext
           logicalMetrics.put(operatorMeta.getName(), windowMetrics);
         }
         LOG.debug("Adding to logical metrics for {}", operatorMeta.getName());
-        windowMetrics.add(new Pair<>(windowId, lm));
+        Pair windowAggregates = new Pair<>(windowId, lm);
+        windowMetrics.add(windowAggregates);
+        if (metricPool.size() == physicalOperators.size()) {
+          latestLogicalCompletedMetrics.put(operatorMeta.getName(), windowAggregates);
+        }
         Map<String, Object> oldValue = latestLogicalMetrics.put(operatorMeta.getName(), lm);
         if (oldValue == null) {
           try {
@@ -2495,11 +2500,16 @@ public class StreamingContainerManager implements PlanContext
 
   public LogicalOperatorInfo getLogicalOperatorInfo(String operatorName)
   {
+    return getLogicalOperatorInfo(operatorName, false);
+  }
+
+  public LogicalOperatorInfo getLogicalOperatorInfo(String operatorName, boolean isCompletedAggregates)
+  {
     OperatorMeta operatorMeta = getLogicalPlan().getOperatorMeta(operatorName);
     if (operatorMeta == null) {
       return null;
     }
-    return fillLogicalOperatorInfo(operatorMeta);
+    return fillLogicalOperatorInfo(operatorMeta, isCompletedAggregates);
   }
 
   public ModuleMeta getModuleMeta(String moduleName)
@@ -2526,7 +2536,7 @@ public class StreamingContainerManager implements PlanContext
     List<LogicalOperatorInfo> infoList = new ArrayList<>();
     Collection<OperatorMeta> allOperators = getLogicalPlan().getAllOperators();
     for (OperatorMeta operatorMeta : allOperators) {
-      infoList.add(fillLogicalOperatorInfo(operatorMeta));
+      infoList.add(fillLogicalOperatorInfo(operatorMeta, false));
     }
     return infoList;
   }
@@ -2608,7 +2618,7 @@ public class StreamingContainerManager implements PlanContext
     return oi;
   }
 
-  private LogicalOperatorInfo fillLogicalOperatorInfo(OperatorMeta operator)
+  private LogicalOperatorInfo fillLogicalOperatorInfo(OperatorMeta operator, boolean isCompletedAggregates)
   {
     LogicalOperatorInfo loi = new LogicalOperatorInfo();
     loi.name = operator.getName();
@@ -2673,7 +2683,12 @@ public class StreamingContainerManager implements PlanContext
     if (physicalOperators.size() > 0 && checkpointTimeAggregate.getAvg() != null) {
       loi.checkpointTimeMA = checkpointTimeAggregate.getAvg().longValue();
       loi.counters = latestLogicalCounters.get(operator.getName());
-      loi.autoMetrics = latestLogicalMetrics.get(operator.getName());
+      if (isCompletedAggregates) {
+        loi.autoMetrics = latestLogicalCompletedMetrics.get(operator.getName());
+      } else {
+        loi.autoMetrics = latestLogicalMetrics.get(operator.getName());
+      }
+
     }
 
     return loi;

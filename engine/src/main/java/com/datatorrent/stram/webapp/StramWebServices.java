@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -576,7 +577,7 @@ public class StramWebServices
   @GET
   @Path(PATH_LOGICAL_PLAN_OPERATORS + "/{operatorName}")
   @Produces(MediaType.APPLICATION_JSON)
-  public JSONObject getLogicalOperator(@PathParam("operatorName") String operatorName) throws Exception
+  public JSONObject getLogicalOperator(@PathParam("operatorName") String operatorName, @DefaultValue("false") @QueryParam("isCompletedAggregates") Boolean isCompletedAggregates) throws Exception
   {
     init();
     OperatorMeta logicalOperator = dagManager.getLogicalPlan().getOperatorMeta(operatorName);
@@ -584,7 +585,7 @@ public class StramWebServices
       throw new NotFoundException();
     }
 
-    LogicalOperatorInfo logicalOperatorInfo = dagManager.getLogicalOperatorInfo(operatorName);
+    LogicalOperatorInfo logicalOperatorInfo = dagManager.getLogicalOperatorInfo(operatorName, isCompletedAggregates);
     return new JSONObject(objectMapper.writeValueAsString(logicalOperatorInfo));
   }
 
