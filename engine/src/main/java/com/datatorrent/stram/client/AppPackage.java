@@ -446,7 +446,7 @@ public class AppPackage implements Closeable
     File dir = new File(directory, "app");
     applications.clear();
 
-    Configuration config = new Configuration();
+    Configuration config = StramClientUtils.addDTSiteResources(new Configuration());
 
     for (Map.Entry<String, PropertyInfo> entry : defaultProperties.entrySet()) {
       config.set(entry.getKey(), entry.getValue().getValue());
