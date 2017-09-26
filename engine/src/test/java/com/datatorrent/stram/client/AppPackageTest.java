@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -147,11 +146,16 @@ public class AppPackageTest
   @Test
   public void testRequiredProperties()
   {
-    Set<String> requiredProperties = ap.getRequiredProperties();
+    Map<String, PropertyInfo> requiredProperties = ap.getRequiredProperties();
     Assert.assertEquals(2, requiredProperties.size());
-    String[] rp = requiredProperties.toArray(new String[]{});
+    String[] rp = requiredProperties.keySet().toArray(new String[]{});
     Assert.assertEquals("dt.test.required.1", rp[0]);
     Assert.assertEquals("dt.test.required.2", rp[1]);
+
+    Assert.assertNull(requiredProperties.get("dt.test.required.1").getValue());
+    Assert.assertNull(requiredProperties.get("dt.test.required.2").getValue());
+    Assert.assertEquals("required property 1", requiredProperties.get("dt.test.required.1").getDescription());
+    Assert.assertEquals("required property 2", requiredProperties.get("dt.test.required.2").getDescription());
   }
 
   @Test
@@ -160,11 +164,12 @@ public class AppPackageTest
     List<AppPackage.AppInfo> applications = ap.getApplications();
     for (AppPackage.AppInfo app : applications) {
       if (app.name.equals("MyFirstApplication")) {
-        String[] rp = app.requiredProperties.toArray(new String[]{});
+        String[] rp = app.requiredProperties.keySet().toArray(new String[]{});
         Assert.assertEquals("dt.test.required.2", rp[0]);
         Assert.assertEquals("dt.test.required.3", rp[1]);
         Assert.assertEquals("app-default-for-required-1", app.defaultProperties.get("dt.test.required.1").getValue());
         Assert.assertEquals("app-default-for-required-1-description", app.defaultProperties.get("dt.test.required.1").getDescription());
+        Assert.assertEquals("app level required property 3", app.requiredProperties.get("dt.test.required.3").getDescription());
         return;
       }
     }
@@ -186,6 +191,7 @@ public class AppPackageTest
     Assert.assertEquals("{\"value\":\"test-value\",\"description\":\"test-description\"}", result);
   }
 
+  @Test
   public void testDefaultProperties()
   {
 

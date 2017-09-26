@@ -47,5 +47,6 @@
   </property>
   <property>
     <name>dt.test.required.3</name>
+    <description>app level required property 3</description>
   </property>
 </configuration>

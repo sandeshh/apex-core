@@ -3774,7 +3774,7 @@ public class ApexCli
       }
     }
     Map<String, PropertyInfo> defaultProperties = selectedApp == null ? ap.getDefaultProperties() : selectedApp.defaultProperties;
-    Set<String> requiredProperties = new TreeSet<>(selectedApp == null ? ap.getRequiredProperties() : selectedApp.requiredProperties);
+    Map<String, PropertyInfo> requiredProperties = new TreeMap<>(selectedApp == null ? ap.getRequiredProperties() : selectedApp.requiredProperties);
 
     for (Map.Entry<String, PropertyInfo> entry : defaultProperties.entrySet()) {
       launchProperties.set(entry.getKey(), entry.getValue().getValue(), Scope.TRANSIENT, entry.getValue().getDescription());
@@ -3836,7 +3836,7 @@ public class ApexCli
       }
     }
     if (!requiredProperties.isEmpty()) {
-      throw new CliException("Required properties not set: " + StringUtils.join(requiredProperties, ", "));
+      throw new CliException("Required properties not set: " + StringUtils.join(requiredProperties.keySet(), ", "));
     }
 
     //StramClientUtils.evalProperties(launchProperties);
