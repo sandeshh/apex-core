@@ -91,7 +91,7 @@ public class AppPackage implements Closeable
   private final List<String> appJsonFiles = new ArrayList<>();
   private final List<String> appPropertiesFiles = new ArrayList<>();
 
-  private final Set<String> requiredProperties = new TreeSet<>();
+  private final Map<String, PropertyInfo> requiredProperties = new TreeMap<>();
   private final Map<String, PropertyInfo> defaultProperties = new TreeMap<>();
   private final Set<String> configs = new TreeSet<>();
 
@@ -108,7 +108,7 @@ public class AppPackage implements Closeable
     public String error;
     public String errorStackTrace;
 
-    public Set<String> requiredProperties = new TreeSet<>();
+    public Map<String, PropertyInfo> requiredProperties = new TreeMap<>();
     public Map<String, PropertyInfo> defaultProperties = new TreeMap<>();
 
     public AppInfo(String name, String file, String type)
@@ -261,7 +261,7 @@ public class AppPackage implements Closeable
   private void processAppProperties()
   {
     for (AppInfo app : applications) {
-      app.requiredProperties.addAll(requiredProperties);
+      app.requiredProperties.putAll(requiredProperties);
       app.defaultProperties.putAll(defaultProperties);
       File appPropertiesXml = new File(directory, "META-INF/properties-" + app.name + ".xml");
       if (appPropertiesXml.exists()) {
@@ -431,9 +431,9 @@ public class AppPackage implements Closeable
     return Collections.unmodifiableList(appPropertiesFiles);
   }
 
-  public Set<String> getRequiredProperties()
+  public Map<String, PropertyInfo> getRequiredProperties()
   {
-    return Collections.unmodifiableSet(requiredProperties);
+    return Collections.unmodifiableMap(requiredProperties);
   }
 
   public Map<String, PropertyInfo> getDefaultProperties()
@@ -557,9 +557,9 @@ public class AppPackage implements Closeable
         String value = entry.getValue();
         if (value == null) {
           if (app == null) {
-            requiredProperties.add(key);
+            requiredProperties.put(key, new PropertyInfo(null, config.getDescription(key)));
           } else {
-            app.requiredProperties.add(key);
+            app.requiredProperties.put(key, new PropertyInfo(null, config.getDescription(key)));
           }
         } else {
         //Attribute are platform specific, ignoring description provided in properties file
