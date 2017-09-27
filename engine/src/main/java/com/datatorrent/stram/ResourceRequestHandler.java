@@ -121,7 +121,8 @@ public class ResourceRequestHandler
     capability.setMemory(csr.container.getRequiredMemoryMB());
     capability.setVirtualCores(csr.container.getRequiredVCores());
     if (host == INVALID_HOST) {
-      return null;
+      host = null;
+      LOG.info("INVALID_HOST found, changing it into null, so that YARN premption can kick in.");
     }
     if (host != null) {
       nodes = new String[]{host};
