@@ -263,7 +263,7 @@ public class ResourceRequestHandler
         }
         if (host != null) {
           antiAffinityMapping.put(c, host);
-        } else {
+        } else if (!antiPreferredHosts.isEmpty() || !antiHosts.isEmpty()) {
           host = INVALID_HOST;
         }
       }
