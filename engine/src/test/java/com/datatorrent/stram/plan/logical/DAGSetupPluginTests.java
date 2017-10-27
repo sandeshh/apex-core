@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.junit.Assert;
 import org.junit.Test;
 
+import org.apache.apex.engine.plugin.NoOpDAGSetupPlugin;
 import org.apache.apex.engine.util.StreamingAppFactory;
 import org.apache.hadoop.conf.Configuration;
 
@@ -65,6 +66,10 @@ public class DAGSetupPluginTests
   @Test
   public void testJavaApplication()
   {
+    Assert.assertFalse(NoOpDAGSetupPlugin.setupCalled);
+    Assert.assertFalse(NoOpDAGSetupPlugin.teardownCalled);
+    Assert.assertFalse(NoOpDAGSetupPlugin.handleCalled);
+
     Configuration conf = getConfiguration();
     StreamingAppFactory factory  = new StreamingAppFactory(Application.class.getName(), Application.class)
     {
@@ -78,6 +83,9 @@ public class DAGSetupPluginTests
     };
     LogicalPlan dag = factory.createApp(new LogicalPlanConfiguration(conf));
     validateProperties(dag);
+    Assert.assertTrue(NoOpDAGSetupPlugin.setupCalled);
+    Assert.assertTrue(NoOpDAGSetupPlugin.teardownCalled);
+    Assert.assertTrue(NoOpDAGSetupPlugin.handleCalled);
   }
 
   @Test

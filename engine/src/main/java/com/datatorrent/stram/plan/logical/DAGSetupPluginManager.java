@@ -27,7 +27,10 @@ import org.slf4j.Logger;
 import org.apache.apex.api.plugin.DAGSetupEvent;
 import org.apache.apex.api.plugin.DAGSetupPlugin;
 import org.apache.apex.api.plugin.Plugin.EventHandler;
+import org.apache.apex.engine.api.plugin.PluginLocator;
+import org.apache.apex.engine.plugin.loaders.ChainedPluginLocator;
 import org.apache.apex.engine.plugin.loaders.PropertyBasedPluginLocator;
+import org.apache.apex.engine.plugin.loaders.ServiceLoaderBasedPluginLocator;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.collect.HashBasedTable;
@@ -63,7 +66,9 @@ public class DAGSetupPluginManager
       return;
     }
 
-    PropertyBasedPluginLocator<DAGSetupPlugin> locator = new PropertyBasedPluginLocator<>(DAGSetupPlugin.class, DAGSETUP_PLUGINS_CONF_KEY);
+    PluginLocator<DAGSetupPlugin> locator = new ChainedPluginLocator<>(new ServiceLoaderBasedPluginLocator<>(DAGSetupPlugin.class),
+        new PropertyBasedPluginLocator<>(DAGSetupPlugin.class, DAGSETUP_PLUGINS_CONF_KEY));
+
     this.plugins.addAll(locator.discoverPlugins(conf));
   }
 
