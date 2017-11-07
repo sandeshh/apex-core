@@ -488,6 +488,11 @@ public class PTOperator implements java.io.Serializable
       this.operatorSet = operatorSet;
     }
 
+    @Override
+    public String toString()
+    {
+      return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("host", host).append("operatorSet", operatorSet.toArray()).toString();
+    }
   }
 
   /**

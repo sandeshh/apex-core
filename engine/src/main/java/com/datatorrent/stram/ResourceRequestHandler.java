@@ -326,14 +326,21 @@ public class ResourceRequestHandler
    */
   public String assignHost(String host, List<String> antiHosts, List<String> antiPreferredHosts, HostOperatorSet grpObj, Set<PTOperator> nodeLocalSet, int aggrMemory, int vCores)
   {
+    LOG.debug("Assign host: anti hosts {}, anti preferred hosts {} aggrMemory {} vCores {}", antiHosts, antiPreferredHosts, aggrMemory, vCores);
+    LOG.debug("Groupobj {}", grpObj);
+    LOG.debug("Node local set {}", nodeLocalSet);
     for (Map.Entry<String, NodeReport> nodeEntry : nodeReportMap.entrySet()) {
       if (nodeEntry.getValue().getNodeState() == NodeState.RUNNING) {
         int memAvailable = nodeEntry.getValue().getCapability().getMemory() - nodeEntry.getValue().getUsed().getMemory();
         int vCoresAvailable = nodeEntry.getValue().getCapability().getVirtualCores() - nodeEntry.getValue().getUsed().getVirtualCores();
+        LOG.debug("Node {} memAvailable {} vCoresAvailable {}", nodeEntry.getKey(), memAvailable, vCoresAvailable);
         if (memAvailable >= aggrMemory && vCoresAvailable >= vCores && !antiHosts.contains(nodeEntry.getKey()) && !antiPreferredHosts.contains(nodeEntry.getKey())) {
           host = nodeEntry.getKey();
+          LOG.debug("Found host entry {}", host);
           grpObj.setHost(host);
-          nodeLocalMapping.put(nodeLocalSet, host);
+          if (!nodeLocalSet.isEmpty()) {
+            nodeLocalMapping.put(nodeLocalSet, host);
+          }
 
           return host;
         }

@@ -54,6 +54,8 @@ import org.apache.apex.engine.plugin.loaders.PropertyBasedPluginLocator;
 import org.apache.apex.engine.plugin.loaders.ServiceLoaderBasedPluginLocator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
@@ -1161,13 +1163,19 @@ public class StreamingAppMasterService extends CompositeService
   private AllocateResponse sendContainerAskToRM(List<ContainerRequest> containerRequests, List<ContainerRequest> removedContainerRequests, List<ContainerId> releasedContainers) throws YarnException, IOException
   {
     if (removedContainerRequests.size() > 0) {
-      LOG.debug("Removing container request: {}", removedContainerRequests);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Removing container request: {}", toString(removedContainerRequests));
+      }
       for (ContainerRequest cr : removedContainerRequests) {
         amRmClient.removeContainerRequest(cr);
       }
     }
     if (containerRequests.size() > 0) {
-      LOG.debug("Asking RM for containers: {}", containerRequests);
+      // The default toString method of ContainerRequest does not print all the important details hence doing a custom
+      // toString implementation. Checking log level so that the toString is not computed when not needed
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Asking RM for containers: {}", toString(containerRequests));
+      }
       for (ContainerRequest cr : containerRequests) {
         amRmClient.addContainerRequest(cr);
       }
@@ -1290,6 +1298,15 @@ public class StreamingAppMasterService extends CompositeService
     {
       return System.currentTimeMillis() - stop > REMOVE_CONTAINER_TIMEOUT;
     }
+  }
+
+  private String toString(List<ContainerRequest> containerRequests)
+  {
+    List<String> containerStrs = new ArrayList<>();
+    for (ContainerRequest containerRequest : containerRequests) {
+      containerStrs.add(new ToStringBuilder(containerRequest, ToStringStyle.DEFAULT_STYLE).reflectionToString(containerRequest));
+    }
+    return containerStrs.toString();
   }
 }
 
