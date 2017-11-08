@@ -1018,14 +1018,16 @@ public class StreamingAppMasterService extends CompositeService
             groupId = groupingManager.getEventGroupIdForAffectedContainer(containerIdStr);
 //          }
           } else {
-            // container completed successfully
-            numCompletedContainers.incrementAndGet();
-            LOG.info("Container completed successfully." + ", containerId=" + containerStatus.getContainerId());
-            // Reset counter for node failure, if exists
-            String hostname = allocatedContainer.container.getNodeId().getHost();
-            NodeFailureStats stats = failedContainerNodesMap.get(hostname);
-            if (stats != null) {
-              stats.failureCount = 0;
+            LOG.info("Container completed successfully, containerId={}, allocated container {}",  containerStatus.getContainerId(), (allocatedContainer != null));
+            if (allocatedContainer != null) {
+              // container completed successfully
+              numCompletedContainers.incrementAndGet();
+              // Reset counter for node failure, if exists
+              String hostname = allocatedContainer.container.getNodeId().getHost();
+              NodeFailureStats stats = failedContainerNodesMap.get(hostname);
+              if (stats != null) {
+                stats.failureCount = 0;
+              }
             }
           }
 
