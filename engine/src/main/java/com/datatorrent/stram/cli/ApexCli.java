@@ -3562,6 +3562,16 @@ public class ApexCli
             new AppPackage.PropertyInfoSerializer(commandLineInfo.provideDescription));
         JSONObject apInfo = new JSONObject(jomp.getContext(null).writeValueAsString(ap));
         apInfo.remove("name");
+        if (!commandLineInfo.provideDescription) {
+          JSONArray applications = apInfo.getJSONArray("applications");
+          for (int i = 0; i < applications.length(); i++) {
+            JSONObject app = applications.getJSONObject(i);
+            JSONArray nameArrayApp = app.getJSONObject("requiredProperties").names();
+            app.put("requiredProperties", nameArrayApp == null ? new JSONArray() : nameArrayApp);
+          }
+          JSONArray nameArrayApInfo = apInfo.getJSONObject("requiredProperties").names();
+          apInfo.put("requiredProperties", nameArrayApInfo == null ? new JSONArray() : nameArrayApInfo);
+        }
         printJson(apInfo);
       }
     }
