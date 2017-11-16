@@ -20,6 +20,9 @@ package com.datatorrent.api;
 
 import java.io.IOException;
 
+import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.hadoop.conf.Configuration;
+
 import com.datatorrent.api.Attribute.AttributeMap;
 
 /**
@@ -94,4 +97,21 @@ public interface StorageAgent
     void setApplicationAttributes(AttributeMap map);
   }
 
+  /**
+   * Interface to help identify and copy storage agents which need to be retained across application restarts
+   */
+  @InterfaceStability.Evolving
+  interface RestartAwareStorageAgent extends ApplicationAwareStorageAgent
+  {
+    /**
+     * Creates a new instance for the current storage agent.
+     * This assumes that the current storage agent has all the necessary data members already set;
+     * possibly using the setApplicationAttributes call.
+     * The new instance will be created using the new conf object passed as a param
+     *
+     * @param conf the new conf object for the restarted app
+     * @return a new instance of the current storage agent
+     */
+    RestartAwareStorageAgent newInstance(Configuration conf);
+  }
 }

@@ -3280,21 +3280,21 @@ public class StreamingContainerManager implements PlanContext
 
       this.finals = new FinalVars(finals, lp);
       StorageAgent sa = lp.getValue(OperatorContext.STORAGE_AGENT);
-      lp.setAttribute(OperatorContext.STORAGE_AGENT, updateStorageAgent(sa, oldAppId, appId, conf));
+      lp.setAttribute(OperatorContext.STORAGE_AGENT, updateStorageAgent(sa, newApp, oldAppId, appId, conf));
     }
   }
 
-  private static StorageAgent updateStorageAgent(StorageAgent sa, String oldAppId, String appId, Configuration conf)
+  private static StorageAgent updateStorageAgent(StorageAgent sa, LogicalPlan newApp, String oldAppId, String appId, Configuration conf)
   {
-    if (sa instanceof AsyncFSStorageAgent || sa instanceof FSStorageAgent) {
-      FSStorageAgent newAgent = (FSStorageAgent)updateFSStorageAgent(sa, oldAppId, appId, conf);
+    if (sa instanceof StorageAgent.RestartAwareStorageAgent || sa instanceof AsyncFSStorageAgent || sa instanceof FSStorageAgent) {
+      FSStorageAgent newAgent = (FSStorageAgent)updateFSStorageAgent(sa, newApp, oldAppId, appId, conf);
       if (newAgent != sa) {
         return new CascadeStorageAgent(sa, newAgent);
       }
     } else if (sa instanceof CascadeStorageAgent) {
       CascadeStorageAgent csa = (CascadeStorageAgent)sa;
       StorageAgent currentStorageAgent = csa.getCurrentStorageAgent();
-      return new CascadeStorageAgent(csa, updateFSStorageAgent(currentStorageAgent, oldAppId, appId, conf));
+      return new CascadeStorageAgent(csa, updateFSStorageAgent(currentStorageAgent, newApp, oldAppId, appId, conf));
     }
     return sa;
   }
@@ -3303,9 +3303,13 @@ public class StreamingContainerManager implements PlanContext
    * Return updated FileSystem based storage agent. Storage agent is updated only when
    * they use application directory to store the checkpoints.
    */
-  private static StorageAgent updateFSStorageAgent(StorageAgent sa, String oldAppId, String appId, Configuration conf)
+  private static StorageAgent updateFSStorageAgent(StorageAgent sa, LogicalPlan newApp, String oldAppId, String appId, Configuration conf)
   {
-    if (sa instanceof AsyncFSStorageAgent) {
+    if (sa instanceof StorageAgent.RestartAwareStorageAgent) {
+      StorageAgent newAgent = ((StorageAgent.RestartAwareStorageAgent)sa).newInstance(conf);
+      ((StorageAgent.RestartAwareStorageAgent)newAgent).setApplicationAttributes(newApp.getAttributes());
+      return newAgent;
+    } else if (sa instanceof AsyncFSStorageAgent) {
       AsyncFSStorageAgent fssa = (AsyncFSStorageAgent)sa;
       if (fssa.path.contains(oldAppId)) {
         return new AsyncFSStorageAgent(fssa.path.replace(oldAppId, appId), conf);
