@@ -64,6 +64,7 @@ import com.datatorrent.stram.plan.physical.PTOperator.State;
 import com.datatorrent.stram.plan.physical.PhysicalPlan;
 import com.datatorrent.stram.util.ConfigUtils;
 import com.datatorrent.stram.webapp.ContainerInfo;
+import com.datatorrent.stram.webapp.ContainerInfo.Type;
 
 /**
  *
@@ -471,6 +472,7 @@ public class StreamingContainerAgent
           .getRawContainerLogsUrl(conf, container.nodeHttpAddress, container.getPlan().getLogicalPlan().getAttributes()
               .get(LogicalPlan.APPLICATION_ID), ci.id);
     }
+    ci.containerType = Type.STREAMING;
     return ci;
   }
 

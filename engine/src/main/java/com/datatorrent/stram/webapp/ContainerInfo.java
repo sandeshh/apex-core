@@ -24,6 +24,11 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
+
+import org.apache.hadoop.classification.InterfaceStability.Evolving;
+
 import com.datatorrent.api.annotation.RecordField;
 
 /**
@@ -35,6 +40,23 @@ import com.datatorrent.api.annotation.RecordField;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ContainerInfo
 {
+  /**
+   * Type indicating whether AppMaster or regular streaming container
+   */
+  @Evolving
+  public static enum Type
+  {
+    /**
+     * App master container
+    */
+    APP_MASTER,
+
+    /**
+     * Regular streaming container
+     */
+    STREAMING
+  }
+
   @RecordField(type = "meta")
   public String id;
   @RecordField(type = "meta", publish = false)
@@ -60,4 +82,6 @@ public class ContainerInfo
   public long finishedTime = -1;
   @RecordField(type = "meta", publish = false)
   public String rawContainerLogsUrl;
+  @JsonSerialize(include = Inclusion.NON_NULL)
+  public Type containerType;
 }

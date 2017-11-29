@@ -33,6 +33,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.Assert;
@@ -70,6 +71,7 @@ import com.datatorrent.stram.plan.logical.requests.LogicalPlanRequest;
 import com.datatorrent.stram.plan.logical.requests.SetOperatorPropertyRequest;
 import com.datatorrent.stram.support.StramTestSupport;
 import com.datatorrent.stram.support.StramTestSupport.TestAppContext;
+import com.datatorrent.stram.webapp.ContainerInfo.Type;
 import com.datatorrent.stram.webapp.StramWebApp.JAXBContextResolver;
 import com.datatorrent.stram.webapp.StramWebServicesTest.GuiceServletConfig.DummyStreamingContainerManager;
 
@@ -459,6 +461,20 @@ public class StramWebServicesTest extends JerseyTest
   {
     String val = getXmlString(element, name);
     return Long.parseLong(val);
+  }
+
+  @Test
+  public void testAMContainerInContainers() throws Exception
+  {
+    WebResource r = resource();
+    String response = r.path(StramWebServices.PATH + "/")
+        .path(StramWebServices.PATH_PHYSICAL_PLAN_CONTAINERS)
+        .accept(MediaType.APPLICATION_JSON).get(String.class);
+    JSONObject json = new JSONObject(response);
+    JSONArray containers = json.getJSONArray("containers");
+    Assert.assertEquals(1, containers.length());
+    JSONObject amContainer = containers.getJSONObject(0);
+    Assert.assertEquals("APP_MASTER", Type.APP_MASTER.name());
   }
 
 }

@@ -175,6 +175,7 @@ import com.datatorrent.stram.util.FSJsonLineFile;
 import com.datatorrent.stram.util.MovingAverage.MovingAverageLong;
 import com.datatorrent.stram.util.SharedPubSubWebSocketClient;
 import com.datatorrent.stram.webapp.ContainerInfo;
+import com.datatorrent.stram.webapp.ContainerInfo.Type;
 import com.datatorrent.stram.webapp.LogicalOperatorInfo;
 import com.datatorrent.stram.webapp.OperatorAggregationInfo;
 import com.datatorrent.stram.webapp.OperatorInfo;
@@ -515,6 +516,7 @@ public class StreamingContainerManager implements PlanContext
     ci.lastHeartbeat = -1;
     ci.startedTime = startTime;
     ci.finishedTime = -1;
+    ci.containerType = Type.APP_MASTER;
     return ci;
   }
 
