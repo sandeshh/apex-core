@@ -155,6 +155,7 @@ public class LogicalPlanConfiguration
   }
 
   private final DAGSetupPluginManager pluginManager;
+  private boolean validateDAG = true;
 
   /**
    * This represents an element that can be referenced in a DT property.
@@ -2085,7 +2086,9 @@ public class LogicalPlanConfiguration
     // configure with external settings
     prepareDAG(dag, null, appName);
     pluginManager.dispatch(PRE_VALIDATE_DAG.event);
-    dag.validate();
+    if (validateDAG) {
+      dag.validate();
+    }
     pluginManager.dispatch(POST_VALIDATE_DAG.event);
     pluginManager.teardown();
     return dag;
@@ -2120,7 +2123,9 @@ public class LogicalPlanConfiguration
     pluginManager.setup(dag);
     prepareDAG(dag, app, appName);
     pluginManager.dispatch(PRE_VALIDATE_DAG.event);
-    dag.validate();
+    if (validateDAG) {
+      dag.validate();
+    }
     pluginManager.dispatch(POST_VALIDATE_DAG.event);
     pluginManager.teardown();
     return dag;
@@ -2602,4 +2607,8 @@ public class LogicalPlanConfiguration
     }
   }
 
+  public void setValidateDAG(boolean validateDAG)
+  {
+    this.validateDAG = validateDAG;
+  }
 }

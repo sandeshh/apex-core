@@ -196,6 +196,11 @@ public class AppPackage implements Closeable
     this(new FileInputStream(file), contentFolder, processAppDirectory);
   }
 
+  public AppPackage(InputStream input, File contentFolder, boolean processAppDirectory) throws IOException
+  {
+    this (input, contentFolder, processAppDirectory, true);
+  }
+
   /**
    * Creates an App Package object.
    *
@@ -210,7 +215,7 @@ public class AppPackage implements Closeable
    * @param processAppDirectory
    * @throws java.io.IOException
    */
-  public AppPackage(InputStream input, File contentFolder, boolean processAppDirectory) throws IOException
+  public AppPackage(InputStream input, File contentFolder, boolean processAppDirectory, boolean doNotValidateDAG) throws IOException
   {
     try (final ZipArchiveInputStream zipArchiveInputStream =
         new ZipArchiveInputStream(input, "UTF8", true, true)) {
@@ -253,7 +258,7 @@ public class AppPackage implements Closeable
       }
 
       if (processAppDirectory) {
-        processAppDirectory(false);
+        processAppDirectory(false, doNotValidateDAG);
       }
     }
   }
@@ -303,7 +308,12 @@ public class AppPackage implements Closeable
    */
   public AppPackage(InputStream input, boolean processAppDirectory) throws IOException
   {
-    this(input, null, processAppDirectory);
+    this(input, processAppDirectory, false);
+  }
+
+  public AppPackage(InputStream input, boolean processAppDirectory, boolean doNotValidateDAG) throws IOException
+  {
+    this(input, null, processAppDirectory, doNotValidateDAG);
   }
 
   public static void extractToDirectory(File directory, File appPackageFile) throws IOException
@@ -443,15 +453,20 @@ public class AppPackage implements Closeable
 
   public void processAppDirectory(boolean skipJars)
   {
+    processAppDirectory(skipJars, false);
+  }
+
+  private void processAppDirectory(boolean skipJars, boolean doNotValidateDAG)
+  {
     File dir = new File(directory, "app");
     applications.clear();
 
     Configuration config = StramClientUtils.addDTSiteResources(new Configuration());
-
     for (Map.Entry<String, PropertyInfo> entry : defaultProperties.entrySet()) {
       config.set(entry.getKey(), entry.getValue().getValue());
     }
 
+    StramClientUtils.evalConfiguration(config);
     List<String> absClassPath = new ArrayList<>(classPath);
     for (int i = 0; i < absClassPath.size(); i++) {
       String path = absClassPath.get(i);
@@ -468,6 +483,7 @@ public class AppPackage implements Closeable
         StramAppLauncher stramAppLauncher = null;
         try {
           stramAppLauncher = new StramAppLauncher(entry, config);
+          stramAppLauncher.getLogicalPlanConfiguration().setValidateDAG(!doNotValidateDAG);
           stramAppLauncher.loadDependencies();
           List<AppFactory> appFactories = stramAppLauncher.getBundledTopologies();
           for (AppFactory appFactory : appFactories) {

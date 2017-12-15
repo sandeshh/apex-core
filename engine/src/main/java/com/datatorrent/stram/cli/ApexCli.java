@@ -465,14 +465,19 @@ public class ApexCli
 
   AppPackage newAppPackageInstance(URI uri, boolean suppressOutput) throws IOException
   {
+    return newAppPackageInstance(uri, suppressOutput, false);
+  }
+
+  AppPackage newAppPackageInstance(URI uri, boolean suppressOutput, boolean doNotValidateDAG) throws IOException
+  {
     PrintStream outputStream = suppressOutput ? suppressOutput() : null;
     try {
       final String scheme = uri.getScheme();
       if (scheme == null || scheme.equals("file")) {
-        return new AppPackage(new FileInputStream(new File(expandFileName(uri.getPath(), true))), true);
+        return new AppPackage(new FileInputStream(new File(expandFileName(uri.getPath(), true))), true, doNotValidateDAG);
       } else {
         try (FileSystem fs = FileSystem.newInstance(uri, conf)) {
-          return new AppPackage(fs.open(new Path(uri.getPath())), true);
+          return new AppPackage(fs.open(new Path(uri.getPath())), true, doNotValidateDAG);
         }
       }
     } finally {
@@ -696,7 +701,7 @@ public class ApexCli
         "Get the configuration parameter"));
     globalCommands.put("get-app-package-info", new OptionsCommandSpec(new GetAppPackageInfoCommand(),
         new Arg[]{new FileArg("app-package-file-path/app-package-file-uri")},
-        new Arg[]{new Arg("-withDescription")},
+        new Arg[]{new Arg("-withDescription"), new Arg("-doNotValidateDAG")},
         "Get info on the app package file",
         GET_APP_PACKAGE_INFO_OPTIONS));
     globalCommands.put("get-app-package-operators", new OptionsCommandSpec(new GetAppPackageOperatorsCommand(),
@@ -3055,7 +3060,8 @@ public class ApexCli
 
   static {
     GET_APP_PACKAGE_INFO_OPTIONS
-        .addOption(new Option("withDescription", false, "Get default properties with description"));
+        .addOption(new Option("withDescription", false, "Get default properties with description"))
+        .addOption(new Option("doNotValidateDAG", false, "Dont perform validations on the DAG"));
   }
 
   public static class GetOperatorClassesCommandLineOptions
@@ -3076,6 +3082,7 @@ public class ApexCli
   static class GetAppPackageInfoCommandLineInfo
   {
     boolean provideDescription;
+    boolean doNotValidateDAG;
   }
 
   static GetAppPackageInfoCommandLineInfo getGetAppPackageInfoCommandLineInfo(String[] args) throws ParseException
@@ -3084,6 +3091,7 @@ public class ApexCli
     GetAppPackageInfoCommandLineInfo result = new GetAppPackageInfoCommandLineInfo();
     CommandLine line = parser.parse(GET_APP_PACKAGE_INFO_OPTIONS, args);
     result.provideDescription = line.hasOption("withDescription");
+    result.doNotValidateDAG = line.hasOption("doNotValidateDAG");
     return result;
   }
 
@@ -3556,7 +3564,7 @@ public class ApexCli
       String[] tmpArgs = new String[args.length - 2];
       System.arraycopy(args, 2, tmpArgs, 0, args.length - 2);
       GetAppPackageInfoCommandLineInfo commandLineInfo = getGetAppPackageInfoCommandLineInfo(tmpArgs);
-      try (AppPackage ap = newAppPackageInstance(new URI(args[1]), true)) {
+      try (AppPackage ap = newAppPackageInstance(new URI(args[1]), true, commandLineInfo.doNotValidateDAG)) {
         JSONSerializationProvider jomp = new JSONSerializationProvider();
         jomp.addSerializer(PropertyInfo.class,
             new AppPackage.PropertyInfoSerializer(commandLineInfo.provideDescription));

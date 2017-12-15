@@ -18,6 +18,8 @@
  */
 package com.example.mydtapp;
 
+import javax.validation.constraints.Min;
+
 import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.common.util.BaseOperator;
 
@@ -28,6 +30,20 @@ import com.datatorrent.common.util.BaseOperator;
 public class StdoutOperator extends BaseOperator
 {
   private String testInput;
+
+  @Min(value = 1)
+  private int uninitializedParam;
+
+
+  public void setUninitializedParam(int uninitializedParam)
+  {
+    this.uninitializedParam = uninitializedParam;
+  }
+
+  public int getUninitializedParam()
+  {
+    return uninitializedParam;
+  }
 
   public String getTestInput()
   {

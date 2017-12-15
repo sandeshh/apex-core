@@ -19,9 +19,12 @@
 package com.datatorrent.stram.cli;
 
 import java.io.File;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONObject;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -36,6 +39,7 @@ import com.datatorrent.stram.client.AppPackage;
 import com.datatorrent.stram.client.ConfigPackage;
 import com.datatorrent.stram.client.DTConfiguration;
 import com.datatorrent.stram.support.StramTestSupport;
+import com.datatorrent.stram.util.JSONSerializationProvider;
 
 import jline.console.ConsoleReader;
 
@@ -142,6 +146,49 @@ public class ApexCliTest
     Assert.assertEquals("user-home-config", props.get("dt.test.4"));
     Assert.assertEquals("app-default", props.get("dt.test.5"));
     Assert.assertEquals("package-default", props.get("dt.test.6"));
+  }
+
+  @Test
+  public void testGetAppPackageInfoCommand() throws Exception
+  {
+    //Verify ConstraintViolationException is not thrown when using -doNotValidateDAG)
+    //Verify exception is not thrown and value of operator port BUFFER_MEMORY_MB gets set
+
+    ApexCli.GetAppPackageInfoCommandLineInfo commandLineInfo = ApexCli
+        .getGetAppPackageInfoCommandLineInfo(new String[] {"-doNotValidateDAG"});
+    Assert.assertTrue(commandLineInfo.doNotValidateDAG);
+    AppPackage ap = cli.newAppPackageInstance(new URI(appFile.getAbsolutePath()), true, commandLineInfo.doNotValidateDAG);
+    JSONSerializationProvider jomp = new JSONSerializationProvider();
+    JSONObject apInfo = new JSONObject(jomp.getContext(null).writeValueAsString(ap));
+    JSONArray apps = apInfo.getJSONArray("applications");
+    JSONArray operators = apps.getJSONObject(0).getJSONObject("dag").getJSONArray("operators");
+    JSONObject randOp = null;
+    for (int i = 0; i < operators.length(); i++) {
+      JSONObject operator = operators.getJSONObject(i);
+      if (operator.getString("name").equals("rand")) {
+        randOp = operator;
+        break;
+      }
+    }
+    Assert.assertNotNull(randOp);
+    Assert.assertEquals(1, randOp.getJSONArray("ports").length());
+    Assert.assertEquals("out", randOp.getJSONArray("ports").getJSONObject(0).getString("name"));
+    Assert.assertEquals(211,
+        randOp.getJSONArray("ports").getJSONObject(0).getJSONObject("attributes").getInt("BUFFER_MEMORY_MB"));
+  }
+
+  @Test
+  public void testGetAppPackageInfoCommandValidation() throws Exception
+  {
+    //Verify ConstraintViolationException is thrown by default
+    ApexCli.GetAppPackageInfoCommandLineInfo commandLineInfo = ApexCli
+        .getGetAppPackageInfoCommandLineInfo(new String[] {});
+    Assert.assertFalse(commandLineInfo.doNotValidateDAG);
+    AppPackage ap = cli.newAppPackageInstance(new URI(appFile.getAbsolutePath()), true, commandLineInfo.doNotValidateDAG);
+    JSONSerializationProvider jomp = new JSONSerializationProvider();
+    JSONObject apInfo = new JSONObject(jomp.getContext(null).writeValueAsString(ap));
+    JSONArray apps = apInfo.getJSONArray("applications");
+    Assert.assertTrue(apps.getJSONObject(0).isNull("dag"));
   }
 
   @Test

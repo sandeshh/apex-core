@@ -45,6 +45,14 @@
     <value>package-default</value>
   </property>
   <property>
+    <name>dt.operator.rand.port.out.attr.BUFFER_MEMORY_MB</name>
+    <value>${apex.app-param.buffermemory}</value>
+  </property>
+  <property>
+    <name>apex.app-param.buffermemory</name>
+    <value>211</value>
+  </property>
+  <property>
     <name>dt.test.required.1</name>
     <description>required property 1</description>
   </property>
