@@ -317,7 +317,7 @@ public class StramClient
           LOG.debug("Copying {} size {} to {}", f.getPath(), f.getLen(), targetPath);
           long start = System.currentTimeMillis();
           FileUtil.copy(fs, f.getPath(), fs, new Path(targetPath), false, conf);
-          LOG.debug("Copying {} to {} took {} ms", f.getPath(), f.getLen(), targetPath, System.currentTimeMillis() - start);
+          LOG.debug("Copying {} to {} took {} ms", f.getPath(), targetPath, System.currentTimeMillis() - start);
         } else {
           LOG.debug("Ignoring {} as it already exists under {}", f.getPath(), targetPath);
         }
