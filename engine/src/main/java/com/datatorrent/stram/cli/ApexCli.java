@@ -4142,6 +4142,15 @@ public class ApexCli
   {
     CommandLineParser parser = new PosixParser();
     LaunchCommandLineInfo result = new LaunchCommandLineInfo();
+
+    // This is a workaround for an error in PosixParser where if a
+    // commandline options is ending with a " then it skips that.
+    for (int i = 0; i < args.length; ++i) {
+      if (args[i].endsWith("\"")) {
+        args[i] += " ";
+      }
+    }
+
     CommandLine line = parser.parse(LAUNCH_OPTIONS.options, args);
     result.localMode = line.hasOption(LAUNCH_OPTIONS.local.getOpt());
     result.configFile = line.getOptionValue(LAUNCH_OPTIONS.configFile.getOpt());
