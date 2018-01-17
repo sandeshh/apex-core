@@ -20,6 +20,7 @@ package com.datatorrent.bufferserver.internal;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,9 +116,10 @@ public class LogicalNode implements DataListener
    */
   public void removeChannel(WriteOnlyClient client)
   {
-    for (PhysicalNode pn : physicalNodes) {
-      if (pn.getClient() == client) {
-        physicalNodes.remove(pn);
+    Iterator<PhysicalNode> iterator = physicalNodes.iterator();
+    while (iterator.hasNext()) {
+      if (iterator.next().getClient() == client) {
+        iterator.remove();
         break;
       }
     }
