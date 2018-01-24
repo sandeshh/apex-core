@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.NodeReport;
 import org.apache.hadoop.yarn.api.records.NodeState;
 import org.apache.hadoop.yarn.api.records.Priority;
@@ -40,6 +41,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import com.datatorrent.stram.StreamingContainerAgent.ContainerStartRequest;
+import com.datatorrent.stram.client.StramClientUtils;
 import com.datatorrent.stram.plan.physical.PTContainer;
 import com.datatorrent.stram.plan.physical.PTOperator;
 import com.datatorrent.stram.plan.physical.PTOperator.HostOperatorSet;
@@ -55,12 +57,14 @@ public class ResourceRequestHandler
 
   private static final Logger LOG = LoggerFactory.getLogger(ResourceRequestHandler.class);
   private static final String INVALID_HOST = "INVALID_HOST";
+  private boolean isPreemptionEnabled;
 
   protected static final int NUMBER_MISSED_HEARTBEATS = 30;
 
-  public ResourceRequestHandler()
+  public ResourceRequestHandler(Configuration configuration)
   {
     super();
+    isPreemptionEnabled = configuration.getBoolean(StramClientUtils.PREEMPTION_ENABLED, false);
   }
 
   /**
@@ -268,6 +272,12 @@ public class ResourceRequestHandler
         }
       }
     }
+
+    if (host == INVALID_HOST && isPreemptionEnabled && antiPreferredHosts.isEmpty() && antiHosts.isEmpty()) {
+      LOG.info("Preemption for request {}", csr);
+      return null;
+    }
+
     LOG.info("Found host {}", host);
     return host;
   }

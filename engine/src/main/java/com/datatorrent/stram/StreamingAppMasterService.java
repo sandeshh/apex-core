@@ -740,7 +740,7 @@ public class StreamingAppMasterService extends CompositeService
     int numReleasedContainers = 0;
     int nextRequestPriority = 0;
     // Use override for resource requestor in case of cloudera distribution, to handle host specific requests
-    ResourceRequestHandler resourceRequestor = System.getenv().containsKey("CDH_HADOOP_BIN") ? new BlacklistBasedResourceRequestHandler() : new ResourceRequestHandler();
+    ResourceRequestHandler resourceRequestor = System.getenv().containsKey("CDH_HADOOP_BIN") ? new BlacklistBasedResourceRequestHandler(conf) : new ResourceRequestHandler(conf);
 
     List<ContainerStartRequest> pendingContainerStartRequests = new LinkedList<>();
     try (YarnClient clientRMService = StramClientUtils.createYarnClient(conf)) {

@@ -27,6 +27,7 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.NodeReport;
 import org.apache.hadoop.yarn.api.records.NodeState;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
@@ -79,7 +80,7 @@ public class HostLocalTest
 
     StreamingContainerManager scm = new StreamingContainerManager(dag);
 
-    ResourceRequestHandler rr = new ResourceRequestHandler();
+    ResourceRequestHandler rr = new ResourceRequestHandler(new Configuration());
 
     int containerMem = 1000;
     Map<String, NodeReport> nodeReports = Maps.newHashMap();
@@ -124,7 +125,7 @@ public class HostLocalTest
 
     StreamingContainerManager scm = new StreamingContainerManager(dag);
 
-    ResourceRequestHandler rr = new ResourceRequestHandler();
+    ResourceRequestHandler rr = new ResourceRequestHandler(new Configuration());
 
     int containerMem = 1000;
     Map<String, NodeReport> nodeReports = Maps.newHashMap();
@@ -163,7 +164,7 @@ public class HostLocalTest
 
     StreamingContainerManager scm = new StreamingContainerManager(dag);
 
-    ResourceRequestHandler rr = new ResourceRequestHandler();
+    ResourceRequestHandler rr = new ResourceRequestHandler(new Configuration());
 
     int containerMem = 1000;
     Map<String, NodeReport> nodeReports = Maps.newHashMap();
@@ -201,7 +202,7 @@ public class HostLocalTest
 
     StreamingContainerManager scm = new StreamingContainerManager(dag);
 
-    ResourceRequestHandler rr = new ResourceRequestHandler();
+    ResourceRequestHandler rr = new ResourceRequestHandler(new Configuration());
 
     int containerMem = 1000;
     Map<String, NodeReport> nodeReports = Maps.newHashMap();
@@ -238,7 +239,7 @@ public class HostLocalTest
 
     StreamingContainerManager scm = new StreamingContainerManager(dag);
 
-    ResourceRequestHandler rr = new ResourceRequestHandler();
+    ResourceRequestHandler rr = new ResourceRequestHandler(new Configuration());
 
     int containerMem = 1000;
     Map<String, NodeReport> nodeReports = Maps.newHashMap();
@@ -278,7 +279,7 @@ public class HostLocalTest
 
     StreamingContainerManager scm = new StreamingContainerManager(dag);
 
-    ResourceRequestHandler rr = new ResourceRequestHandler();
+    ResourceRequestHandler rr = new ResourceRequestHandler(new Configuration());
 
     int containerMem = 1000;
     Map<String, NodeReport> nodeReports = Maps.newHashMap();

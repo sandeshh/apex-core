@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.NodeReport;
 import org.apache.hadoop.yarn.api.records.NodeState;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
@@ -104,7 +105,7 @@ public class AffinityRulesTest
 
     // Check resource handler assigns different hosts for each partition
 
-    ResourceRequestHandler rr = new ResourceRequestHandler();
+    ResourceRequestHandler rr = new ResourceRequestHandler(new Configuration());
     int containerMem = 1000;
     Map<String, NodeReport> nodeReports = Maps.newHashMap();
     for (int i = 0; i < 10; i++) {
@@ -155,7 +156,7 @@ public class AffinityRulesTest
 
     StreamingContainerManager scm = new StreamingContainerManager(dag);
 
-    ResourceRequestHandler rr = new ResourceRequestHandler();
+    ResourceRequestHandler rr = new ResourceRequestHandler(new Configuration());
 
     int containerMem = 1000;
     Map<String, NodeReport> nodeReports = Maps.newHashMap();

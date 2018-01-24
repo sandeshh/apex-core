@@ -24,6 +24,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.NodeReport;
 import org.apache.hadoop.yarn.api.records.NodeState;
 import org.apache.hadoop.yarn.server.utils.BuilderUtils;
@@ -75,7 +76,7 @@ public class LocalityTest
     StreamingContainerManager scm = new StreamingContainerManager(dag);
     Assert.assertEquals("number required containers", 6, scm.containerStartRequests.size());
 
-    ResourceRequestHandler rr = new ResourceRequestHandler();
+    ResourceRequestHandler rr = new ResourceRequestHandler(new Configuration());
 
     int containerMem = 2000;
     Map<String, NodeReport> nodeReports = Maps.newHashMap();

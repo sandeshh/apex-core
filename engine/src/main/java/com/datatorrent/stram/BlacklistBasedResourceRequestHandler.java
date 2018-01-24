@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.client.api.AMRMClient;
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest;
 
@@ -50,6 +51,11 @@ public class BlacklistBasedResourceRequestHandler extends ResourceRequestHandler
   HashMap<ContainerRequest, ContainerStartRequest> otherContainerRequests = new HashMap<>();
   HashMap<String, List<ContainerRequest>> hostSpecificRequestsMap = new HashMap<>();
   List<String> blacklistedNodesForHostSpecificRequests = null;
+
+  public BlacklistBasedResourceRequestHandler(Configuration configuration)
+  {
+    super(configuration);
+  }
 
   @Override
   public void reissueContainerRequests(AMRMClient<ContainerRequest> amRmClient, Map<StreamingContainerAgent.ContainerStartRequest, MutablePair<Integer, ContainerRequest>> requestedResources, int loopCounter, ResourceRequestHandler resourceRequestor, List<ContainerRequest> containerRequests, List<ContainerRequest> removedContainerRequests)
