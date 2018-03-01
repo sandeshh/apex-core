@@ -52,6 +52,7 @@ import com.datatorrent.stram.api.StreamingContainerUmbilicalProtocol.ContainerSt
 import com.datatorrent.stram.api.StreamingContainerUmbilicalProtocol.OperatorHeartbeat;
 import com.datatorrent.stram.api.StreamingContainerUmbilicalProtocol.StramToNodeRequest;
 import com.datatorrent.stram.engine.Node;
+import com.datatorrent.stram.engine.OiONode;
 import com.datatorrent.stram.plan.logical.LogicalPlan;
 import com.datatorrent.stram.plan.logical.Operators.PortContextPair;
 import com.datatorrent.stram.plan.logical.Operators.PortMappingDescriptor;
@@ -129,6 +130,10 @@ public class TupleRecorderCollection extends HashMap<OperatorIdPortNamePair, Tup
 
   private void startRecording(String id, final Node<?> node, int operatorId, final String portName, long numWindows)
   {
+    if (node instanceof OiONode) {
+      logger.warn("Recording not supported on thread local streams. Attempt to record on operator id {}, port {}", operatorId, portName);
+      return;
+    }
     PortMappingDescriptor descriptor = node.getPortMappingDescriptor();
     OperatorIdPortNamePair operatorIdPortNamePair = new OperatorIdPortNamePair(operatorId, portName);
     // check any recording conflict
@@ -229,6 +234,9 @@ public class TupleRecorderCollection extends HashMap<OperatorIdPortNamePair, Tup
 
   private void stopRecording(Node<?> node, int operatorId, String portName)
   {
+    if (node instanceof OiONode) {
+      return;
+    }
     OperatorIdPortNamePair operatorIdPortNamePair = new OperatorIdPortNamePair(operatorId, portName);
     if (containsKey(operatorIdPortNamePair)) {
       logger.debug("Executing stop recording request for {}", operatorIdPortNamePair);
