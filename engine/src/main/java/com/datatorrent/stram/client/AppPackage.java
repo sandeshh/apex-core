@@ -55,6 +55,7 @@ import org.apache.hadoop.conf.Configuration;
 
 import com.datatorrent.stram.client.StramAppLauncher.AppFactory;
 import com.datatorrent.stram.plan.logical.LogicalPlan;
+import com.datatorrent.stram.plan.logical.LogicalPlanConfiguration;
 
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
@@ -259,18 +260,6 @@ public class AppPackage implements Closeable
 
       if (processAppDirectory) {
         processAppDirectory(false, doNotValidateDAG);
-      }
-    }
-  }
-
-  private void processAppProperties()
-  {
-    for (AppInfo app : applications) {
-      app.requiredProperties.putAll(requiredProperties);
-      app.defaultProperties.putAll(defaultProperties);
-      File appPropertiesXml = new File(directory, "META-INF/properties-" + app.name + ".xml");
-      if (appPropertiesXml.exists()) {
-        processPropertiesXml(appPropertiesXml, app);
       }
     }
   }
@@ -494,6 +483,7 @@ public class AppPackage implements Closeable
             AppInfo appInfo = new AppInfo(appName, entry.getName(), "class");
             appInfo.displayName = appFactory.getDisplayName();
             try {
+              processAppProperties(appInfo, config,stramAppLauncher.getLogicalPlanConfiguration());
               appInfo.dag = appFactory.createApp(stramAppLauncher.getLogicalPlanConfiguration());
             } catch (Throwable ex) {
               appInfo.error = ex.getMessage();
@@ -519,21 +509,19 @@ public class AppPackage implements Closeable
     config.set(StramAppLauncher.LIBJARS_CONF_KEY_NAME, StringUtils.join(absClassPath, ','));
     files = dir.listFiles();
     for (File entry : files) {
+      StramAppLauncher stramAppLauncher = null;
+      AppInfo appInfo = null;
       if (entry.getName().endsWith(".json")) {
         appJsonFiles.add(entry.getName());
-        AppInfo appInfo = StramClientUtils.jsonFileToAppInfo(entry, config);
-
-        if (appInfo != null) {
-          applications.add(appInfo);
-        }
+        appInfo = StramClientUtils.jsonFileToAppInfo(entry, config);
 
       } else if (entry.getName().endsWith(".properties")) {
         appPropertiesFiles.add(entry.getName());
         try {
           AppFactory appFactory = new StramAppLauncher.PropertyFileAppFactory(entry);
-          StramAppLauncher stramAppLauncher = new StramAppLauncher(entry.getName(), config);
+          stramAppLauncher = new StramAppLauncher(entry.getName(), config);
           stramAppLauncher.loadDependencies();
-          AppInfo appInfo = new AppInfo(appFactory.getName(), entry.getName(), "properties");
+          appInfo = new AppInfo(appFactory.getName(), entry.getName(), "properties");
           appInfo.displayName = appFactory.getDisplayName();
           try {
             appInfo.dag = appFactory.createApp(stramAppLauncher.getLogicalPlanConfiguration());
@@ -541,16 +529,42 @@ public class AppPackage implements Closeable
             appInfo.error = t.getMessage();
             appInfo.errorStackTrace = ExceptionUtils.getStackTrace(t);
           }
-          applications.add(appInfo);
         } catch (Exception ex) {
           LOG.error("Caught exceptions trying to process {}", entry.getName(), ex);
         }
       } else if (!entry.getName().endsWith(".jar")) {
         LOG.warn("Ignoring file {} with unknown extension in app directory", entry.getName());
       }
+      if (appInfo != null) {
+        processAppProperties(appInfo, config, stramAppLauncher == null ? null : stramAppLauncher.getLogicalPlanConfiguration());
+        applications.add(appInfo);
+      }
     }
 
-    processAppProperties();
+  }
+
+  /**
+   * Updates configuration using app properties specified in
+   * "META-INF/properties-<app.name>.xml"
+   */
+  private void processAppProperties(AppInfo app, Configuration config,
+      LogicalPlanConfiguration appLauncherConfig)
+  {
+    app.requiredProperties.putAll(requiredProperties);
+    app.defaultProperties.putAll(defaultProperties);
+    File appPropertiesXml = new File(directory, "META-INF/properties-" + app.name + ".xml");
+    if (appPropertiesXml.exists()) {
+      processPropertiesXml(appPropertiesXml, app);
+    }
+    Configuration appConf = StramClientUtils.addDTSiteResources(new Configuration());
+    for (Map.Entry<String, PropertyInfo> propEntry : app.defaultProperties.entrySet()) {
+      appConf.set(propEntry.getKey(), propEntry.getValue().getValue());
+      config.set(propEntry.getKey(), propEntry.getValue().getValue());
+    }
+    StramClientUtils.evalConfiguration(appConf);
+    if (appLauncherConfig != null) {
+      appLauncherConfig.addFromConfiguration(appConf);
+    }
   }
 
   private void processConfDirectory(File dir)
