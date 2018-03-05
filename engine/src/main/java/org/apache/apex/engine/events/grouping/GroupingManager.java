@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.apex.engine.events.grouping.GroupingRequest.EventGroupId;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 
 import com.datatorrent.stram.plan.physical.PTOperator;
@@ -51,7 +52,8 @@ public class GroupingManager
    * Retruns all available grouping requests with StrAM
    * @return groupingRequests
    */
-  public Map<String, GroupingRequest> getGroupingRequests()
+  @VisibleForTesting
+  protected Map<String, GroupingRequest> getGroupingRequests()
   {
     return groupingRequests;
   }
@@ -61,7 +63,8 @@ public class GroupingManager
    * @param containerId
    * @return groupingRequest
    */
-  public GroupingRequest getGroupingRequest(String containerId)
+  @VisibleForTesting
+  protected GroupingRequest getGroupingRequest(String containerId)
   {
     if (containerId != null) {
       return groupingRequests.get(containerId);
@@ -76,7 +79,7 @@ public class GroupingManager
    *         <b>Note:</b> groupId 0 indicates and independent event, with no
    *         group
    */
-  public EventGroupId getEventGroupIdForContainer(String containerId)
+  public synchronized EventGroupId getEventGroupIdForContainer(String containerId)
   {
     EventGroupId groupId = null;
     if (containerId != null && groupingRequests.get(containerId) != null) {
@@ -93,7 +96,7 @@ public class GroupingManager
    *         <b>Note:</b> groupId 0 indicates and indipendent event, with no
    *         group
    */
-  public EventGroupId getEventGroupIdForAffectedContainer(String containerId)
+  public synchronized EventGroupId getEventGroupIdForAffectedContainer(String containerId)
   {
     EventGroupId groupId = getEventGroupIdForContainer(containerId);
     if (groupId != null) {
@@ -115,7 +118,7 @@ public class GroupingManager
    *         <b>Note:</b> groupId 0 indicates and indipendent event, with no
    *         group
    */
-  public EventGroupId getEventGroupIdForOperatorToDeploy(int operatorId)
+  public synchronized EventGroupId getEventGroupIdForOperatorToDeploy(int operatorId)
   {
     for (GroupingRequest request : getGroupingRequests().values()) {
       if (request.getOperatorsToDeploy().contains(operatorId)) {
@@ -130,7 +133,7 @@ public class GroupingManager
    * @param containerIs
    * @param operator
    */
-  public void addOperatorToDeploy(String containerId, PTOperator oper)
+  public synchronized void addOperatorToDeploy(String containerId, PTOperator oper)
   {
     GroupingRequest request = getGroupingRequest(containerId);
     if (request != null) {
@@ -141,7 +144,7 @@ public class GroupingManager
   /**
    * Removes operator from grouping request
    */
-  public boolean removeOperatorFromGroupingRequest(int operatorId)
+  public synchronized boolean removeOperatorFromGroupingRequest(int operatorId)
   {
     for (GroupingRequest request : getGroupingRequests().values()) {
       if (request.getOperatorsToDeploy().contains((operatorId))) {
@@ -155,7 +158,7 @@ public class GroupingManager
    * Remove groupingRequest from StrAM if it has no more pending operators to deploy
    * @param containerId
    */
-  public void removeProcessedGroupingRequests()
+  public synchronized void removeProcessedGroupingRequests()
   {
     Iterator<Entry<String, GroupingRequest>> itr = groupingRequests.entrySet().iterator();
     while (itr.hasNext()) {
@@ -175,7 +178,7 @@ public class GroupingManager
    * @param containerId
    * @param affectedOperators
    */
-  public GroupingRequest addOrModifyGroupingRequest(String containerId, Set<PTOperator> affectedOperators)
+  public synchronized GroupingRequest addOrModifyGroupingRequest(String containerId, Set<PTOperator> affectedOperators)
   {
     GroupingRequest request = groupingRequests.get(containerId);
     if (request == null) {
@@ -195,7 +198,7 @@ public class GroupingManager
    * @param groupLeaderContainerId
    * @param affectedContainerId
    */
-  public void addNewContainerToGroupingRequest(String groupLeaderContainerId, String affectedContainerId)
+  public synchronized void addNewContainerToGroupingRequest(String groupLeaderContainerId, String affectedContainerId)
   {
     if (groupLeaderContainerId != null && affectedContainerId != null) {
       GroupingRequest request = getGroupingRequest(groupLeaderContainerId);
@@ -211,7 +214,7 @@ public class GroupingManager
    * @param operator
    * @return groupId
    */
-  public EventGroupId moveOperatorFromUndeployListToDeployList(PTOperator oper)
+  public synchronized EventGroupId moveOperatorFromUndeployListToDeployList(PTOperator oper)
   {
     EventGroupId groupId = null;
     for (GroupingRequest request : groupingRequests.values()) {
@@ -227,7 +230,7 @@ public class GroupingManager
   /**
    * Clear all grouping requests
    */
-  public void clearAllGroupingRequests()
+  public synchronized void clearAllGroupingRequests()
   {
     groupingRequests.clear();
   }

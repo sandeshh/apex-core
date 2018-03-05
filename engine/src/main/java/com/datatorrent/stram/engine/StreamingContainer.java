@@ -676,7 +676,7 @@ public class StreamingContainer extends YarnContainerMain
           } else if (failedNodes.contains(hb.nodeId)) {
             hb.setState(DeployState.FAILED);
           } else {
-            logger.debug("Reporting SHUTDOWN state because thread is {} and failedNodes is {}", context.getThread(), failedNodes);
+            logger.info("Reporting SHUTDOWN state because thread is {} and failedNodes is {}", context.getThread(), failedNodes);
             hb.setState(DeployState.SHUTDOWN);
           }
 
