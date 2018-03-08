@@ -19,6 +19,7 @@
 package com.datatorrent.stram.client;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +59,7 @@ public class AppPackageTest
   {
     File file = StramTestSupport.createAppPackageFile();
     // Set up test instance
-    ap = new AppPackage(file, true);
+    ap = new AppPackage(new FileInputStream(file), true, true);
     try {
       // set up another instance
       File testfolder = new File("target/testapp");
@@ -196,7 +197,7 @@ public class AppPackageTest
   {
 
     Map<String, AppPackage.PropertyInfo> defaultProperties = ap.getDefaultProperties();
-    Assert.assertEquals(8, defaultProperties.size());
+    Assert.assertEquals(10, defaultProperties.size());
     Assert.assertEquals("package-default", defaultProperties.get("dt.test.1").getValue());
     Assert.assertEquals("package-default", defaultProperties.get("dt.test.2").getValue());
     Assert.assertEquals("package-default", defaultProperties.get("dt.test.3").getValue());
