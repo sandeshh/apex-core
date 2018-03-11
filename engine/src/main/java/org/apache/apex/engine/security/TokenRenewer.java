@@ -152,7 +152,8 @@ public class TokenRenewer
       UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(principal, keyTabFile.getAbsolutePath());
       if (!checkOnly) {
         try {
-          ugi.doAs(new PrivilegedExceptionAction<Object>()
+          UserGroupInformation currUGI = UserGroupInformation.createProxyUser(tokenRenewer, ugi);
+          currUGI.doAs(new PrivilegedExceptionAction<Object>()
           {
             @Override
             public Object run() throws Exception
