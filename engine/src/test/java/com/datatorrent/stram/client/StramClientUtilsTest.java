@@ -29,6 +29,7 @@ import java.util.Properties;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -49,6 +50,7 @@ import static org.powermock.api.mockito.PowerMockito.spy;
  * Unit tests for StramClientUtils
  */
 @PrepareForTest(UserGroupInformation.class)
+@PowerMockIgnore({"javax.script.*", "com.sun.script.*"})
 @RunWith(PowerMockRunner.class)
 public class StramClientUtilsTest
 {
