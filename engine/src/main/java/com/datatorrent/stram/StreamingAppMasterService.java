@@ -694,7 +694,9 @@ public class StreamingAppMasterService extends CompositeService
   {
     LOG.info("Starting ApplicationMaster");
     final Configuration conf = getConfig();
-    tokenRenewer = new TokenRenewer(dag, true, conf, appAttemptID.getApplicationId().toString());
+    if (UserGroupInformation.isSecurityEnabled()) {
+      tokenRenewer = new TokenRenewer(dag, true, conf, appAttemptID.getApplicationId().toString());
+    }
 
     // Register self with ResourceManager
     RegisterApplicationMasterResponse response = amRmClient.registerApplicationMaster(appMasterHostname, 0, appMasterTrackingUrl);
@@ -767,7 +769,9 @@ public class StreamingAppMasterService extends CompositeService
         loopCounter++;
         final long currentTimeMillis = System.currentTimeMillis();
 
-        tokenRenewer.checkAndRenew();
+        if (tokenRenewer != null) {
+          tokenRenewer.checkAndRenew();
+        }
 
         if (currentTimeMillis > nodeReportUpdateTime) {
           resourceRequestor.updateNodeReports(clientRMService.getNodeReports());

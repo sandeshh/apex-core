@@ -48,6 +48,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.log4j.LogManager;
 
@@ -612,11 +613,15 @@ public class StreamingContainer extends YarnContainerMain
     logger.debug("Entering heartbeat loop (interval is {} ms)", this.heartbeatIntervalMillis);
     umbilical.log(containerId, "[" + containerId + "] Entering heartbeat loop..");
     final YarnConfiguration conf = new YarnConfiguration();
-    tokenRenewer = new TokenRenewer(containerContext, false, conf, containerId);
+    if (UserGroupInformation.isSecurityEnabled()) {
+      tokenRenewer = new TokenRenewer(containerContext, false, conf, containerId);
+    }
     String stackTrace = null;
     while (!exitHeartbeatLoop) {
 
-      tokenRenewer.checkAndRenew();
+      if (tokenRenewer != null) {
+        tokenRenewer.checkAndRenew();
+      }
 
       synchronized (this.heartbeatTrigger) {
         try {
