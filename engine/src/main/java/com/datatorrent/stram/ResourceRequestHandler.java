@@ -64,7 +64,8 @@ public class ResourceRequestHandler
   public ResourceRequestHandler(Configuration configuration)
   {
     super();
-    isPreemptionEnabled = configuration.getBoolean(StramClientUtils.PREEMPTION_ENABLED, false);
+    isPreemptionEnabled = Boolean.getBoolean(StramClientUtils.PREEMPTION_ENABLED);
+    LOG.info("Preemption is " + (isPreemptionEnabled ? "enabled" : "disabled"));
   }
 
   /**
